@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Usage</title>
+  <style>
+    :root { --bg:#2d2d2d; --field:#3d3d3d; --border:#555; --text:#dcdcdc; --muted:#9a9a9a; --accent:#f08c69; --ok:#34dda0; --bad:#ff5c5c; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:10px; background:var(--bg); color:var(--text); font:9pt/1.5 "Segoe UI", Tahoma, sans-serif; }
+    h3 { margin:12px 0 6px; font-size:9.5pt; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:3px; }
+    h3:first-child { margin-top:0; }
+    .row { display:flex; align-items:center; gap:8px; margin-bottom:6px; min-height:24px; }
+    .row > label:first-child { flex:0 0 88px; color:var(--muted); }
+    .row > .value { flex:1; display:flex; gap:6px; align-items:center; min-width:0; }
+    input[type=text], input[type=number], select {
+      width:100%; background:var(--field); color:var(--text); border:1px solid var(--border);
+      border-radius:3px; padding:3px 6px; font:inherit; height:24px; }
+    input[type=number] { width:60px; }
+    button { background:var(--field); color:var(--text); border:1px solid var(--border); border-radius:3px;
+      padding:3px 10px; font:inherit; cursor:pointer; white-space:nowrap; }
+    button:hover { border-color:var(--accent); }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#1a1a1a; font-weight:600; }
+    .hint { color:var(--muted); font-size:8.5pt; margin:2px 0 8px; }
+    .path { word-break:break-all; }
+    .hidden { display:none !important; }
+    details summary { cursor:pointer; color:var(--muted); margin:4px 0 6px; }
+    #status { background:#232323; border:1px solid var(--border); border-radius:4px; padding:7px 8px; }
+    #status .err { color:var(--bad); }
+    #status .ok { color:var(--ok); }
+    #status table { width:100%; border-collapse:collapse; margin-top:4px; }
+    #status td { padding:1px 2px; }
+    #status td.n { text-align:right; white-space:nowrap; }
+    .buttons { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  </style>
+</head>
+<body>
+
+  <h3>This key</h3>
+  <div class="row"><label for="provider">Provider</label>
+    <div class="value"><select id="provider">
+      <option value="claude">Claude (via Claude Code login)</option>
+      <option value="chatgpt">ChatGPT (via Codex login)</option>
+      <option value="antigravity">Antigravity (app must be running)</option>
+    </select></div></div>
+  <div class="row"><label for="metric">Show</label>
+    <div class="value"><select id="metric">
+      <option value="session">5-hour limit</option>
+      <option value="weekly">Weekly limit</option>
+      <option value="model">One model's limit</option>
+      <option value="overview">Overview (5-hour + weekly)</option>
+      <option value="extra">Extra usage / credits</option>
+    </select></div></div>
+  <div class="row" id="filterRow"><label for="filterSelect" id="filterLabel">Model</label>
+    <div class="value"><select id="filterSelect"></select></div></div>
+  <div class="row" id="filterTextRow"><label for="filter">&nbsp;</label>
+    <div class="value"><input id="filter" type="text" placeholder="" /></div></div>
+  <div class="hint" id="filterHint"></div>
+  <div class="row" id="styleRow"><label for="style">Style</label>
+    <div class="value"><select id="style">
+      <option value="fill">Fill (liquid fills the key)</option>
+      <option value="number">Big coloured number</option>
+      <option value="bar">Number + bar</option>
+      <option value="ring">Ring</option>
+    </select></div></div>
+  <div class="row"><label for="label">Key label</label>
+    <div class="value"><input id="label" type="text" placeholder="automatic" maxlength="12" /></div></div>
+  <div class="row" id="resetRow"><label for="showReset">Reset time</label>
+    <div class="value"><input id="showReset" type="checkbox" /> <span class="hint" style="margin:0">show time left until the limit resets</span></div></div>
+  <div class="row"><label>Colours (%)</label>
+    <div class="value">amber at <input id="warnAt" type="number" min="1" max="100" /> red at <input id="dangerAt" type="number" min="1" max="100" /></div></div>
+  <p class="hint">Keys are small: short labels (about 6 characters) are drawn biggest. Tap: refresh now. Hold: open the provider's page.</p>
+
+  <h3>Status</h3>
+  <div id="status">Waiting for the plugin...</div>
+  <div class="buttons">
+    <button id="refresh">Refresh now</button>
+    <button id="openUsage">Provider page</button>
+    <button id="openLog">Log folder</button>
+  </div>
+
+  <h3>All keys</h3>
+  <div class="row"><label for="refreshMinutes">Refresh every</label>
+    <div class="value"><input id="refreshMinutes" type="number" min="1" max="120" /> minutes</div></div>
+  <div class="row"><label for="proxy">Proxy</label>
+    <div class="value"><input id="proxy" type="text" placeholder="system (e.g. http://127.0.0.1:8080)" /></div></div>
+  <p class="hint">Empty = Windows system proxy. HTTP proxies only (no SOCKS). <b>none</b> = direct connection. Antigravity is always read locally, without a proxy.</p>
+  <details>
+    <summary>Login folders (advanced)</summary>
+    <div class="row"><label for="claudeDir">Claude Code</label>
+      <div class="value"><input id="claudeDir" type="text" placeholder="%USERPROFILE%\.claude" /></div></div>
+    <div class="row"><label for="codexDir">Codex</label>
+      <div class="value"><input id="codexDir" type="text" placeholder="%USERPROFILE%\.codex" /></div></div>
+  </details>
+  <div class="buttons"><button class="primary" id="save">Save</button></div>
+  <p class="hint">The plugin only <b>reads</b> logins that Claude Code and Codex already keep on this PC, and never changes or renews them. If a key says LOGIN EXPIRED, open that app once.</p>
+
+  <script src="pi.js"></script>
+</body>
+</html>

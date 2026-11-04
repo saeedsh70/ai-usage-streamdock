@@ -1,0 +1,42 @@
+{
+  "Actions": [
+    {
+      "Icon": "images/action",
+      "Name": "AI Usage",
+      "States": [
+        {
+          "Image": "images/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10",
+          "ShowTitle": false
+        }
+      ],
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "Tooltip": "Shows Claude, ChatGPT (Codex) or Antigravity usage limits. Tap: refresh. Hold: open the provider's page.",
+      "UUID": "com.saeedsh.aiusage.meter",
+      "PropertyInspectorPath": "pi.html"
+    }
+  ],
+  "SDKVersion": 1,
+  "Author": "SaeedSH",
+  "Name": "AI Usage",
+  "Description": "Usage limits of your AI subscriptions on your stream deck keys: Claude, ChatGPT (Codex) and Google Antigravity - 5-hour, weekly, per-model limits and credits.",
+  "Category": "AI Usage",
+  "CategoryIcon": "images/category",
+  "Icon": "images/plugin",
+  "CodePath": "AIUsage.exe",
+  "CodePathWin": "AIUsage.exe",
+  "Version": "1.0.0",
+  "URL": "https://github.com/saeedsh70/ai-usage-streamdock",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  }
+}

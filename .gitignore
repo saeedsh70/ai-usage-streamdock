@@ -1,0 +1,18 @@
+# build output
+com.saeedsh.aiusage.sdPlugin/AIUsage.exe
+*.exe
+*.pdb
+build/
+dist/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# editors / OS
+.vs/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store

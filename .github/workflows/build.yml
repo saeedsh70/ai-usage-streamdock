@@ -1,0 +1,78 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-linux:
+    name: Tests (Linux / Mono, C# 5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Mono and NSIS
+        run: sudo apt-get update && sudo apt-get install -y mono-devel libgdiplus nsis
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r test/requirements.txt
+      - run: bash test/run-tests.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: key-gallery
+          path: build/gallery/
+
+  build-windows:
+    name: Build, sign (optional) and test on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make sure NSIS is installed
+        shell: powershell
+        run: |
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and
+              -not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) { choco install nsis -y --no-progress }
+      - name: Build AIUsage.exe (Windows csc.exe) and the installer
+        shell: powershell
+        env:
+          # Optional code signing: add these repository secrets to sign the exe and the installer.
+          SIGN_PFX_BASE64: ${{ secrets.SIGN_PFX_BASE64 }}
+          SIGN_PFX_PASSWORD: ${{ secrets.SIGN_PFX_PASSWORD }}
+        run: .\build.ps1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: End-to-end test on .NET Framework
+        run: |
+          pip install -r test/requirements.txt
+          python test/fake_host.py com.saeedsh.aiusage.sdPlugin/AIUsage.exe
+      - name: Checksums
+        shell: bash
+        run: cd dist && sha256sum *.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: dist/*
+
+  release:
+    name: GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: installer
+          path: dist
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file CHANGELOG.md
