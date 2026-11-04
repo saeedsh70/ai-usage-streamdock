@@ -13,16 +13,22 @@ jobs:
   test-linux:
     name: Tests (Linux / Mono, C# 5)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Mono and NSIS
-        run: sudo apt-get update && sudo apt-get install -y mono-devel libgdiplus nsis
-      - uses: actions/setup-python@v5
+        timeout-minutes: 15
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update -q
+          sudo -E apt-get install -y -q --no-install-recommends mono-devel libgdiplus nsis
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: pip install -r test/requirements.txt
       - run: bash test/run-tests.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: key-gallery
           path: build/gallery/
@@ -30,8 +36,9 @@ jobs:
   build-windows:
     name: Build, sign (optional) and test on Windows
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Make sure NSIS is installed
         shell: powershell
         run: |
@@ -44,7 +51,7 @@ jobs:
           SIGN_PFX_BASE64: ${{ secrets.SIGN_PFX_BASE64 }}
           SIGN_PFX_PASSWORD: ${{ secrets.SIGN_PFX_PASSWORD }}
         run: .\build.ps1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: End-to-end test on .NET Framework
@@ -54,7 +61,7 @@ jobs:
       - name: Checksums
         shell: bash
         run: cd dist && sha256sum *.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: installer
           path: dist/*
@@ -67,8 +74,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: installer
           path: dist
